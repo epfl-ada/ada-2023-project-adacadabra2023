@@ -1,56 +1,71 @@
-#WHOLE SCRIPT NEEDS TO BE FIXED ONCE THE FUNCTION IS PROGRAMMED
-
-#DATA UPLOAD AND PATH FINDER: 
-import tarfile
 import pandas as pd
 import numpy as np
-import re
-import os
-import gzip
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
 
-def extract_tar_files(data_path):
+
+def correct_time(df):
     '''
-        List the .tar files in the data path and extract them in the corresponding subfolder
+        Change the date column to appropriate format and add as a column the year for the time analysis
     '''
-    tar_files = [file for file in os.listdir(data_path) if file.endswith('.gz')]
-
-    for tar_file in tar_files:
-        tar_file_path = os.path.join(data_path, tar_file)
-
-        extraction_folder_name = os.path.basename(tar_file_path).split('.', 1)[0]
-        folder_path = os.path.join(data_path, extraction_folder_name)
-        os.makedirs(folder_path, exist_ok=True)
-
-        with tarfile.open(tar_file_path, 'r') as tar:
-            tar.extractall(path=folder_path)
-            
-            
-def text_to_csv(path, filename):
+    df['date'] = pd.to_datetime(df.date, unit='s')
+    df['year'] = df['date'].dt.year
+    return(df)
+    
+def zscore_merge(df1, df2):
     '''
-        This function takes as input the path where the .txt file is located as well as the filename and will create a .tsv file 
-        in the same folder from the data in the .txt file. 
-        
-        The .txt file is read line by line and a dictionary is created to which the different values for each key are appended as 
-        the file is read. The "nan" are replaced by empty space ('') to be better recognized when creating a dataframe.
-    '''
-    main_path = os.path.join(path, filename)
-    if not os.path.exists(main_path + '.tsv'):
-        with gzip.open(main_path + '.txt.gz', 'rt', encoding="utf8") as file_txt:
-            with open(main_path + '.tsv', 'w', encoding="utf8") as file_tsv:
-                first = True
-                obj = {}
-                for line in file_txt:
-                    if line == '\n':
-                        if first:
-                            file_tsv.write("\t".join(obj.keys()) + "\n")
-                            first=False
-                        file_tsv.write("\t".join(obj.values()) + "\n")
-                        obj = {}
-                        continue
+        Calculation of the z-score for each beer (not for the mean score of the beer that is what we have in BA_beers or RB_beers) and
+        addition of this column to the identified merged ratings
+    '''    
+    df1['z_score'] = df1.groupby('year')['rating'].transform(lambda x: (x-x.mean())/x.std())
+    df2 = df2.merge(df1, how='inner').copy(deep=True)
+    return(df2)
+ 
+def linear_trend(group):
+    y = group['diff_exp_mean'].to_numpy()
+    X = group['ith_rating'].to_numpy()
+    X = sm.add_constant(X)
+    res_ols = sm.OLS(y, X).fit()
+    return pd.Series({
+        'Slope': res_ols.params[1],
+        'Intercept': res_ols.params[0]
+    })
 
-                    line = re.sub(r'\bnan\b', '', line)
-                    key, value = line.strip().split(":", 1)
-                    obj[key] = value
-                
-                if obj: file_tsv.write("\t".join(obj.values()) + "\n")
-                
+def detrend(group, trend_data):
+    slope = trend_data.loc[group['beer_id'].iloc[1]]['Slope']
+    intercept = trend_data.loc[group['beer_id'].iloc[0]]['Intercept']
+    return pd.Series(group['z_score'] + (slope * group['ith_rating'] + intercept))
+
+def he_correction(df, min_number, plotting=False):
+    '''
+        Detrend of the herding effect in the z-score column of the df
+    ''' 
+    # Expanding mean as a function of ith rating z-score
+    df = df.sort_values(by=['beer_id', 'date']) #Sort according to the beer_id and, after that, according to date
+    df['exp_mean'] = df.groupby('beer_id')['z_score'].transform(lambda x: x.expanding().mean())
+    
+    # Create new column with difference between the z_score of the rating and the expanded mean up to that value 
+    df['diff_exp_mean'] = df['z_score'] - df['exp_mean']
+    #)[['exp_mean', 'z_score']].transform(lambda x: x['z_score'] - x['exp_mean'])
+       
+    # Create column with indexing of number of rating for that beer for regression
+    df['ith_rating'] = df.groupby('beer_id').cumcount() + 1
+    
+    if plotting:
+        # Plot with just the first beer for a better comprehension
+        grouped_df = df.groupby('beer_id')[['diff_exp_mean', 'ith_rating']]
+        first_group_ID = list(grouped_df.groups.keys())[0]
+        first_group = grouped_df.get_group(first_group_ID)
+
+        plt.plot(first_group['ith_rating'], first_group['diff_exp_mean'])
+        plt.xlabel('ith rating')
+        plt.ylabel('Diff betwen rating and ith rating expanding average')
+    
+    grouped_df = df.groupby('beer_id')
+    trend_data = grouped_df.apply(linear_trend)
+    new_col = grouped_df.apply(lambda group: detrend(group, trend_data))
+    A = pd.DataFrame(new_col)
+    values = A[0].to_numpy()
+    df['detrend'] = values
+    return(df)
+ 
