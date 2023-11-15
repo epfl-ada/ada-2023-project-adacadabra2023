@@ -26,17 +26,23 @@ def linear_trend(group):
     X = group['ith_rating'].to_numpy()
     X = sm.add_constant(X)
     res_ols = sm.OLS(y, X).fit()
-    return pd.Series({
-        'Slope': res_ols.params[1],
-        'Intercept': res_ols.params[0]
-    })
+    if len(group)>1:
+        return pd.Series({
+            'Slope': res_ols.params[1],
+            'Intercept': res_ols.params[0]
+        })
+    else:
+        return pd.Series({
+            'Slope': 0,
+            'Intercept': 0
+        })
 
 def detrend(group, trend_data):
-    slope = trend_data.loc[group['beer_id'].iloc[1]]['Slope']
+    slope = trend_data.loc[group['beer_id'].iloc[0]]['Slope']
     intercept = trend_data.loc[group['beer_id'].iloc[0]]['Intercept']
     return pd.Series(group['z_score'] + (slope * group['ith_rating'] + intercept))
 
-def he_correction(df, min_number, plotting=False):
+def he_correction(df, plotting=False):
     '''
         Detrend of the herding effect in the z-score column of the df
     ''' 
@@ -46,7 +52,6 @@ def he_correction(df, min_number, plotting=False):
     
     # Create new column with difference between the z_score of the rating and the expanded mean up to that value 
     df['diff_exp_mean'] = df['z_score'] - df['exp_mean']
-    #)[['exp_mean', 'z_score']].transform(lambda x: x['z_score'] - x['exp_mean'])
        
     # Create column with indexing of number of rating for that beer for regression
     df['ith_rating'] = df.groupby('beer_id').cumcount() + 1
