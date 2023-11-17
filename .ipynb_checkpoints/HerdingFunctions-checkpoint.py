@@ -26,7 +26,7 @@ def linear_trend(group):
     X = group['ith_rating'].to_numpy()
     X = sm.add_constant(X)
     res_ols = sm.OLS(y, X).fit()
-    if len(group)>1:
+    if len(group)>2:
         return pd.Series({
             'Slope': res_ols.params[1],
             'Intercept': res_ols.params[0]
