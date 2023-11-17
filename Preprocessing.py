@@ -23,7 +23,7 @@ def extract_tar_files(data_path):
             tar.extractall(path=folder_path)
             
             
-def text_to_csv(path, filename):
+def text_to_tsv(path, filename):
     '''
         This function takes as input the path where the .txt file is located as well as the filename and will create a .tsv file 
         in the same folder from the data in the .txt file. 
