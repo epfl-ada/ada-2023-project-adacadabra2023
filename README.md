@@ -4,7 +4,7 @@ Be(er)AGuide
 ## ABSTRACT:
 Move beyond the ordinary tourist experience and immerse yourself in the world of beer exploration when travelling. Our concept serves as a guiding light for those adventurous souls who crave more from their beer-related travels. We are building a community where beer enthusiasts unite to uncover the true essence of each locale's brews. "Be(er)AGuide" is more than a guide; it is an invitation to be part of a community, connecting with individuals who share your passion, discovering unique beers and learning interesting curiosities of our community and beyond. Join us as we transform typical beer tourism into a shared adventure, discovering the heart of each destination through its unique brews. You now have the opportunity to Be(er)AGuide!
  
-## Research questions:
+## Research questions:
 In our traveling guide we aim to address the following questions where the three main categories are:
 1. Information on local breweries and unique beers for your travel:
     - What are the top-rated beers and breweries among the local ones in each country? Does it change over time?
@@ -44,8 +44,7 @@ The use of the TF-IDF will be as following:
     - Fun facts section, TF-IDF used to identify unusual words. The analysis will be followed by SVD to reduce dimensionality of the reviews and represent them into vectorial space. By color coding each review by corresponding ABV content we can see if there's any relation between the ABV and the unusual words used by reviewers
 
 
- 
-## Proposed deadlines:
+## Proposed deadlines:
  
 03.11.23 – Analysis and understanding of data
  
@@ -70,9 +69,13 @@ The use of the TF-IDF will be as following:
 ## Organization of the team in terms of responsibility
  
 Andrea: herding effect detrending, time and geographical analysis
+
 Sebas: users clustering
+
 Cristina: text analysis and breweries filtering 
+
 Sandra: herding effect detrending, time and geographical analysis
+
 Antonello: text analysis and breweries filtering
  
 We equally contribute to data story creation, webpage implementation and initial preprocessing of the data. 
