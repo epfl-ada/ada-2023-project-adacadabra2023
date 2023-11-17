@@ -72,10 +72,10 @@ Andrea: herding effect detrending, time and geographical analysis
 
 Sebas: users clustering
 
-Cristina: text analysis and breweries filtering 
+Cristina: text analysis and breweries analysis 
 
 Sandra: herding effect detrending, time and geographical analysis
 
-Antonello: text analysis and breweries filtering
+Antonello: text analysis and breweries analysis
  
 We equally contribute to data story creation, webpage implementation and initial preprocessing of the data. 
