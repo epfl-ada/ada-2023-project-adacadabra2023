@@ -26,15 +26,6 @@ def correct_time(df, season=False):
         df['Season'][df['Season']==""]='Winter'
     return(df)
     
-def zscore_merge(df1, df2):
-    '''
-        Calculation of the z-score for each beer (not for the mean score of the beer that is what we have in BA_beers or RB_beers) and
-        addition of this column to the identified merged ratings
-    '''    
-    df1['z_score'] = df1.groupby('year')['rating'].transform(lambda x: (x-x.mean())/x.std())
-    df2 = df2.merge(df1, how='inner').copy(deep=True)
-    return(df2)
- 
 def linear_trend(group):
     y = group['diff_exp_mean'].to_numpy()
     X = group['ith_rating'].to_numpy()
