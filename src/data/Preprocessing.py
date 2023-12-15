@@ -6,6 +6,7 @@ import re
 import os
 import gzip
 
+
 def extract_tar_files(data_path):
     '''
         List the .tar files in the data path and extract them in the corresponding subfolder
@@ -51,4 +52,3 @@ def text_to_tsv(path, filename):
                     obj[key] = value
                 
                 if obj: file_tsv.write("\t".join(obj.values()) + "\n")
-                
