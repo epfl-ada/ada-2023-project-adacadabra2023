@@ -12,19 +12,19 @@ def correct_time(df, season=False):
     df['year'] = df['date'].dt.year
     if season: 
         df['Season']=""
-        df['Season'][(df['date'].dt.month>3)&(df['date'].dt.month<6)]='Spring'
-        df['Season'][(df['date'].dt.month>6)&(df['date'].dt.month<9)]='Summer'
-        df['Season'][(df['date'].dt.month>9)&(df['date'].dt.month<12)]='Autumn'
+        df.loc[(df['date'].dt.month>3)&(df['date'].dt.month<6),  'Season']='Spring'
+        df.loc[(df['date'].dt.month>6)&(df['date'].dt.month<9),  'Season']='Summer'
+        df.loc[(df['date'].dt.month>9)&(df['date'].dt.month<12), 'Season']='Autumn'
         #Months in between two seasons
-        df['Season'][(df['date'].dt.month==3)&(df['date'].dt.day<21)]='Winter'
-        df['Season'][(df['date'].dt.month==3)&(df['date'].dt.day>21)]='Spring'
-        df['Season'][(df['date'].dt.month==6)&(df['date'].dt.day<21)]='Spring'
-        df['Season'][(df['date'].dt.month==6)&(df['date'].dt.day>21)]='Summer'
-        df['Season'][(df['date'].dt.month==9)&(df['date'].dt.day<21)]='Summer'
-        df['Season'][(df['date'].dt.month==9)&(df['date'].dt.day>21)]='Autumn'
-        df['Season'][(df['date'].dt.month==12)&(df['date'].dt.day<21)]='Autumn'
-        df['Season'][df['Season']==""]='Winter'
-    return(df)
+        df.loc[(df['date'].dt.month==3)&(df['date'].dt.day<21), 'Season']='Winter'
+        df.loc[(df['date'].dt.month==3)&(df['date'].dt.day>21), 'Season']='Spring'
+        df.loc[(df['date'].dt.month==6)&(df['date'].dt.day<21), 'Season']='Spring'
+        df.loc[(df['date'].dt.month==6)&(df['date'].dt.day>21), 'Season']='Summer'
+        df.loc[(df['date'].dt.month==9)&(df['date'].dt.day<21), 'Season']='Summer'
+        df.loc[(df['date'].dt.month==9)&(df['date'].dt.day>21), 'Season']='Autumn'
+        df.loc[(df['date'].dt.month==12)&(df['date'].dt.day<21), 'Season']='Autumn'
+        df.loc[df['Season']=="", 'Season']='Winter'
+    return df
     
 def linear_trend(group):
     y = group['diff_exp_mean'].to_numpy()
@@ -77,5 +77,5 @@ def he_correction(df, plotting=False):
     A = pd.DataFrame(new_col)
     values = A[0].to_numpy()
     df['detrend'] = values
-    return(df)
+    return df
  
