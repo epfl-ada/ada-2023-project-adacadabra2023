@@ -65,11 +65,18 @@ def main(args):
     BA_reviews = pd.read_csv(BA_path + '/reviews.tsv', sep='\t')
     
     # TODO: Filter dataframes individually
+    # filter_users()
     MB_users = filter_users(MB_users, args.min_user_rating)
     RB_users = filter_users(RB_users, args.min_user_rating)
     BA_users = filter_users(BA_users, args.min_user_rating)
     # filter_beers()
-    # filter...
+    MB_beers = filter_beers(MB_beers, args.min_beer_review)
+    RB_beers = filter_beers(RB_beers, args.min_beer_review)
+    BA_beers= filter_beers(BA_beers, args.min_beer_review)
+    # filter_breweries()
+    MB_breweries = filter_breweries(MB_breweries, args.min_brewery_produced)
+    RB_breweries = filter_breweries(RB_breweries, args.min_brewery_produced)
+    BA_breweries= filter_breweries(BA_breweries, args.min_brewery_produced)
     
     # TODO: Copy Andrea's merge
     
@@ -82,6 +89,8 @@ def main(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dpath', type=str, default= 'Data')
-    parser.add_argument('-r', '--min-user-rating', type=int, default=10) # TODO: Get correct number (change default)
+    parser.add_argument('-rt', '--min-user-rating', type=int, default=10) # TODO: Get correct number (change default)
+    parser.add_argument('-rw', '--min-beer-review', type=int, default=10) # TODO: Get correct number (change default)
+    parser.add_argument('-bp', '--min-rewery-produced', type=int, default=10) # TODO: Get correct number (change default)
     args = parser.parse_args()
     main(args)
