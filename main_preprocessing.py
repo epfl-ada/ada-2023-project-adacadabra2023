@@ -87,7 +87,6 @@ def main(args):
     
     print('Filtering dataframes by num_ratings/beers...')
     # Filter dataframes individually
-
     # MB_users = filter_by_ratings(MB_users, args.min_user_rating, 'nbr_ratings')
     RB_users, RB_ratings = filter_by_ratings(RB_users, RB_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
     BA_users, BA_ratings = filter_by_ratings(BA_users, BA_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
@@ -187,10 +186,13 @@ def main(args):
     unified_users['total_nbr_ratings'] = unified_users['nbr_ratings_rb'] + unified_users['nbr_ratings_ba']
     print('Done')
     
+    print(RB_ratings.shape)
+    print(BA_ratings.shape)
+    
     print('Merging ratings...')
     # Creation of the df with ALL the ratings with a unique user ID (randomly chosen to be the one from RB)
     unified_ratings = RB_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id']] #'text', 'user_id']]
-    unified_ratings['Procedence'] = 'RB'
+    unified_ratings.loc[:, 'Procedence'] = 'RB'
 
     BA_subset = BA_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id']] #'text', 'user_id']]
     BA_subset = BA_subset.add_suffix('_ba')
@@ -219,7 +221,7 @@ def main(args):
 
     BA_subset = BA_subset.drop(['beer_name_ba', 'beer_id_ba', 'brewery_id_ba', 'brewery_name_ba', 'style_ba', 'user_id_ba'], axis=1)
     BA_subset.columns = BA_subset.columns.str.replace('_ba' , '')
-    BA_subset['Procedence'] = 'BA'
+    BA_subset.loc[:, 'Procedence'] = 'BA'
 
     unified_ratings = pd.concat([unified_ratings, BA_subset], ignore_index=True)
 
@@ -257,8 +259,8 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dpath', type=str, default= 'Data')
     parser.add_argument('--no-extract', action='store_true')
-    parser.add_argument('-rt', '--min-user-rating', type=int, default=15) # TODO: Get correct number (change default)
-    parser.add_argument('-rw', '--min-beer-review', type=int, default=10) # TODO: Get correct number (change default)
-    parser.add_argument('-bp', '--min-brewery-produced', type=int, default=1) # TODO: Get correct number (change default)
+    parser.add_argument('-rt', '--min-user-rating', type=int, default=20)
+    parser.add_argument('-rw', '--min-beer-review', type=int, default=15)
+    parser.add_argument('-bp', '--min-brewery-produced', type=int, default=1)
     args = parser.parse_args()
     main(args)
