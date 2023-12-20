@@ -12,7 +12,7 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 
 # Config
-st.set_page_config(page_title='Beers Travel Guide', page_icon=':beer_mug:')
+st.set_page_config(page_title='Beers Travel Guide', page_icon=':beer:')
 
 # Title
 st.title('🏭 What about the breweries?')
@@ -25,7 +25,7 @@ st.write(
 data_exploration, locorind, best_breweries = st.tabs(['Data exploration', 'Local or Industrial?', 'Best breweries to visit'])
 
 # Load datasets
-data_path = os.path.join('/Users/loureiro/Documents/Courses/CS-401_ADA/project_v4_branch/Data', 'Unified_ratings.pkl')
+data_path = os.path.join('/Users/loureiro/Documents/Courses/CS-401_ADA/project_v4_branch/Data', 'Unified_ratings_wo_text.pkl')
 with open(data_path, 'rb') as f:
     ratings = pkl.load(f)
 data_path = os.path.join('/Users/loureiro/Documents/Courses/CS-401_ADA/project_v4_branch/Data', 'Unified_breweries.pkl')
@@ -40,20 +40,25 @@ with data_exploration:
     )
     
     # Histograms showing the complete distribution of the number of beers per brewery on the left and the number of breweries producing up to 100 beers on the right
-    fig,axs = plt.subplots(nrows=1, ncols=2, figsize=(14,4), sharey=False, gridspec_kw={'width_ratios':[1,1], 'wspace': 0.5})
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9,2.5), sharex=False, sharey=False, gridspec_kw={'width_ratios':[1,1], 'wspace': 0.3})
 
-    data['total_nbr_beers'].sort_values().plot(kind='hist', bins= 100, ax=axs[0])
-    axs[0].set_xlabel('Number of beers produced by a brewery')
-    axs[0].set_ylabel('Log . Number of breweries')
+    sns.histplot(data=data, x='total_nbr_beers', bins=50, ax=axs[0], color='#4a79a5', edgecolor='#3b6084')
+    axs[0].set_xlabel('number of beers', fontsize='11')
+    axs[0].set_ylabel('number breweries in log.', fontsize='11')
     axs[0].set_yscale('log')
-    axs[0].set_title('All breweries')
+    axs[0].set_title('All breweries', fontsize='12')
+    for label in (axs[0].get_xticklabels() + axs[0].get_yticklabels()):
+        label.set_fontsize(9)
 
-    data['total_nbr_beers'].sort_values().plot(kind='hist', range = (0, 100), bins= 100, ax=axs[1])
-    axs[1].set_xlabel('Number of beers produced by a brewery')
-    axs[1].set_ylabel('Number of breweries')
-    axs[1].set_title('Breweries with max. 100 beers')
+    sns.histplot(data=data, x='total_nbr_beers', bins=600, ax=axs[1], color='#cf651d', edgecolor='#a01010')
+    axs[1].set_xlim(0,100)
+    axs[1].set_xlabel('number of beers', fontsize='11')
+    axs[1].set_ylabel('number breweries', fontsize='11')
+    axs[1].set_title('Breweries with max. 100 beers', fontsize='12')
+    for label in (axs[1].get_xticklabels() + axs[1].get_yticklabels()):
+        label.set_fontsize(9)
 
-    fig.suptitle('Distribution of breweries producing n types of beers', weight='bold')
+    #fig.suptitle('Distribution of beers produced by brewery', weight='bold', fontsize='13')
 
     st.pyplot(fig)
 
@@ -100,9 +105,10 @@ with best_breweries:
     option = st.selectbox('Select a country you are interested in visiting?',
         (np.sort(data['location'].unique())))
 
-    df = ratings[ratings['country_brewery']==option].groupby('brewery_name').agg({'rating':'mean'}).reset_index().sort_values(by='rating', ascending=False)
- 
-    st.write('You selected the country:', option)
-    st.write('This are the top rated breweries for that country:')
-    st.write(df['brewery_name'].head(5))
+    df = ratings[ratings['country_brewery']==option].groupby('brewery_name').agg({'z_score':'mean'}).reset_index().sort_values(by='z_score', ascending=False)
+    df = df.reset_index()
+    df.index += 1
+    
+    st.write('These are the top rated breweries in that country:')
+    st.table(df['brewery_name'].head(10))
     
