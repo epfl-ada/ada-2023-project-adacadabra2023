@@ -1,106 +1,62 @@
 import argparse
-import os
+import os, shutil
 import pandas as pd
 import numpy as np
 import pickle as pkl
+
+import tarfile
 
 import src.data.Preprocessing as pproc 
 import src.data.HerdingFunctions as hf
 
 
-def filter_by_ratings(df, df_ratings, min_ratings, colname, idcolname1, idcolname2=None):
-    ''' Filters users based on number of ratings.
-    Args:
-        df (pd.DataFrame): dataframe with users.
-        df_ratings: TODo
-        min_ratings (int): minimum number of ratings a user should have to not be removed
-        colname: name of the column that will set the threshold for filtring out
-        idcolname1: name of the column (in df) that will do the comparison between dfs looking for an isin function
-        idcolname2: name of the column (in df_ratings) that will do the comparison between dfs looking for an isin function
-    Returns:
-        pd.DataFrame: dataframe with users filtered
-    '''
-    if idcolname2 is None:
-        idcolname2 = idcolname1
-    # filter the df accoring to the threshold
-    filtered_df = df[df[colname]>min_ratings]
-    # take the common column to both dfs and apply an isin
-    filtered_df2 = df_ratings[df_ratings[idcolname2].isin(filtered_df[idcolname1].values)]
-    return filtered_df, filtered_df2
-
-
 def main(args):
-    ''' Creates pre-processed .csv files from the original files.
+    ''' 
+    Pre-process the raw data, transform .txt files to .parquet and unified
+    the pre-process files into pickle files
     '''
-    # Definining the path for the files
+    # Define the path for the files
     RB_path = os.path.join(args.dpath, 'RateBeer')
     BA_path = os.path.join(args.dpath, 'BeerAdvocate')
     MB_path = os.path.join(args.dpath, 'matched_beer_data')
 
-    # Extraction of the .tar files
-    if not args.no_extract:
-        print('Extracting files...')
-        pproc.extract_tar_files(args.dpath)
+    # Extract the .tar files
+    print('Extracting files...')
+    pproc.extract_tar_files(args.dpath)
         
-        #Transformation of the .txt files
-        pproc.text_to_tsv(RB_path, 'ratings')
-        pproc.text_to_tsv(RB_path, 'reviews')
-
-        pproc.text_to_tsv(BA_path, 'ratings')
-        pproc.text_to_tsv(BA_path, 'reviews')
-
-        pproc.text_to_tsv(MB_path, 'ratings_ba')
-        pproc.text_to_tsv(MB_path, 'ratings_with_text_ba')
-        pproc.text_to_tsv(MB_path, 'ratings_rb')
-        pproc.text_to_tsv(MB_path, 'ratings_with_text_rb')
-        print('Done!')
+    #Transform .txt files to tsv
+    print('Transforming ratings.txt to tsv...')
+    pproc.txt_to_tsv(RB_path, 'ratings')
+    pproc.txt_to_tsv(BA_path, 'ratings')
     
-    
-    # Load all data
-    print('Loading dataframes...')
+    # Loading data
+    print('Loading datasets...')
     MB_beers = pd.read_csv(MB_path + '/beers.csv', header=1)
     MB_breweries = pd.read_csv(MB_path + '/breweries.csv', header=1)
     MB_users = pd.read_csv(MB_path + '/users.csv', header=1)
-    # MB_users_approx = pd.read_csv(MB_path + '/users_approx.csv', header=1) 
-    # MB_ratings = pd.read_csv(MB_path + '/ratings.csv', header=1)
-    # MB_ratingsBA = pd.read_csv(MB_path + '/ratings_ba.tsv', sep='\t')
-    # MB_ratingsBA_txt = pd.read_csv(MB_path + '/ratings_with_text_ba.tsv', sep='\t')
-    # MB_ratingsRB = pd.read_csv(MB_path + '/ratings_rb.tsv', sep='\t')
-    # MB_ratingsRB_txt = pd.read_csv(MB_path + '/ratings_with_text_rb.tsv', sep='\t')
     
     RB_beers = pd.read_csv(RB_path + '/beers.csv')
     RB_breweries = pd.read_csv(RB_path + '/breweries.csv')
     RB_users = pd.read_csv(RB_path + '/users.csv')
     RB_ratings = pd.read_csv(RB_path + '/ratings.tsv', sep='\t')
-    # RB_reviews = pd.read_csv(RB_path + '/reviews.tsv', sep='\t')
     
     BA_beers = pd.read_csv(BA_path + '/beers.csv')
     BA_breweries = pd.read_csv(BA_path + '/breweries.csv')
     BA_users = pd.read_csv(BA_path + '/users.csv')
     BA_ratings = pd.read_csv(BA_path + '/ratings.tsv', sep='\t')
+
     # Remove space in front of user
     BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
-    # BA_reviews = pd.read_csv(BA_path + '/reviews.tsv', sep='\t')
-    print('Initial RB ratings shape: ', RB_ratings.shape)
-    print('Initial BA ratings shape: ', BA_ratings.shape)
-    print('Done')
-    
-    print('Filtering dataframes by num_ratings/beers...')
-    # Filter dataframes individually
-    # MB_users = filter_by_ratings(MB_users, args.min_user_rating, 'nbr_ratings')
-    RB_users, RB_ratings = filter_by_ratings(RB_users, RB_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
-    BA_users, BA_ratings = filter_by_ratings(BA_users, BA_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
-    # MB_beers = filter_by_ratings(MB_beers, args.min_beer_review,'nbr_ratings')
-    RB_beers, RB_ratings = filter_by_ratings(RB_beers,RB_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
-    BA_beers, BA_ratings = filter_by_ratings(BA_beers,BA_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
-    # MB_breweries = filter_by_ratings(MB_breweries, args.min_brewery_produced, 'nbr_beers')
-    RB_breweries, RB_ratings = filter_by_ratings(RB_breweries,RB_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
-    BA_breweries, BA_ratings = filter_by_ratings(BA_breweries,BA_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
-    print('Done')
-    
+
+    # Remove extracted folders
+    print('Removing extracted folders...')
+    shutil.rmtree(RB_path)
+    shutil.rmtree(BA_path)
+    shutil.rmtree(MB_path)
+   
     # Merge breweries
-    print('Merging breweries...')
     # Creation of the df with ALL the breweries with a unique brewery ID (chosen to be the one from RB)
+    print('Merging breweries...')
     unified_breweries = RB_breweries
     unified_breweries = unified_breweries.rename(columns={'nbr_beers':'nbr_beers_rb'})
 
@@ -128,12 +84,17 @@ def main(args):
     unified_breweries = unified_breweries.drop_duplicates('id')
     unified_breweries = unified_breweries.drop('nbr_beers_ba', axis=1)
     unified_breweries = unified_breweries.rename(columns={'nbr_ba':'nbr_beers_ba'})
-    print('Done')
+
+    # Save unified breweries as pickle file
+    print('Saving merging breweries as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_breweries.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_breweries, f)
+    print('Final unified breweries shape: ', unified_breweries.shape)
 
     # Merge beers
-    print('Merging beers...')
     # Creation of the df with ALL the beers (that have at least one rating) with a unique beer ID (randomly chosen to be the one from RB)
-
+    print('Merging beers...')
     unified_beers = RB_beers[['beer_id', 'beer_name', 'nbr_ratings', 'style', 'brewery_id', 'brewery_name']]
     unified_beers = unified_beers.rename(columns={'nbr_ratings':'nbr_ratings_rb'})
 
@@ -158,10 +119,10 @@ def main(args):
     unified_beers['nbr_ratings_rb'].fillna(0, inplace=True)
     unified_beers['nbr_ratings_ba'].fillna(0, inplace=True)
     unified_beers['total_nbr_ratings'] = unified_beers['nbr_ratings_rb'] + unified_beers['nbr_ratings_ba']
-    print('Done!')
     
+    # Merge users
     # Creation of the df with ALL the users with a unique user ID (randomly chosen to be the one from RB)
-    print('Merging users')
+    print('Merging users...')
     unified_users = RB_users[['nbr_ratings', 'user_id', 'user_name', 'location']]
     unified_users = unified_users.rename(columns={'nbr_ratings':'nbr_ratings_rb'})
 
@@ -184,17 +145,21 @@ def main(args):
     unified_users['nbr_ratings_rb'].fillna(0, inplace=True)
     unified_users['nbr_ratings_ba'].fillna(0, inplace=True)
     unified_users['total_nbr_ratings'] = unified_users['nbr_ratings_rb'] + unified_users['nbr_ratings_ba']
-    print('Done')
-    
-    print(RB_ratings.shape)
-    print(BA_ratings.shape)
-    
-    print('Merging ratings...')
-    # Creation of the df with ALL the ratings with a unique user ID (randomly chosen to be the one from RB)
-    unified_ratings = RB_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id']] #'text', 'user_id']]
-    unified_ratings.loc[:, 'Procedence'] = 'RB'
 
-    BA_subset = BA_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id']] #'text', 'user_id']]
+    # Save unified users as pickle file
+    print('Saving merging users as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_users.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_users, f)
+    print('Final unified users shape: ', unified_users.shape)
+    
+    # Merge ratings
+    # Creation of the df with ALL the ratings with a unique user ID (randomly chosen to be the one from RB)
+    print('Merging ratings...')
+    unified_ratings = RB_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id', 'text']]
+    unified_ratings.loc[:, 'Procedence']  = 'RB'
+
+    BA_subset = BA_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id', 'text']]
     BA_subset = BA_subset.add_suffix('_ba')
 
     equivalences_brew_id = dict(zip(merged_df['id_ba'], merged_df['id']))
@@ -221,7 +186,7 @@ def main(args):
 
     BA_subset = BA_subset.drop(['beer_name_ba', 'beer_id_ba', 'brewery_id_ba', 'brewery_name_ba', 'style_ba', 'user_id_ba'], axis=1)
     BA_subset.columns = BA_subset.columns.str.replace('_ba' , '')
-    BA_subset.loc[:, 'Procedence'] = 'BA'
+    BA_subset.loc[:, 'Procedence']  = 'BA'
 
     unified_ratings = pd.concat([unified_ratings, BA_subset], ignore_index=True)
 
@@ -230,13 +195,10 @@ def main(args):
 
     equivalences_brew_country = dict(zip(unified_breweries['id'], unified_breweries['location']))
     unified_ratings['country_brewery'] = unified_ratings['brewery_id'].map(equivalences_brew_country)
-    print('Done')
     
-    print(unified_ratings.shape)
-
-    
+    # Correct herding effect
+    # Adding a time column in an interpretable format and a 'year' column.
     print('Correcting for herding...')
-    # Addition of a time column in an interpretable format. Also, addition of a 'year' column.
     unified_ratings = hf.correct_time(unified_ratings, season=True).copy(deep=True)
     unified_ratings['z_score'] = unified_ratings.groupby(['Procedence', 'year'])['rating'].transform(lambda x:(x-x.mean())/x.std())
     unified_ratings_BA = unified_ratings[unified_ratings.Procedence == 'BA']
@@ -244,23 +206,19 @@ def main(args):
     unified_ratings_BA = hf.he_correction(unified_ratings_BA)
     unified_ratings_RB = hf.he_correction(unified_ratings_RB)
 
+    print('Concatenating data...')
     unified_ratings = pd.concat([unified_ratings_BA, unified_ratings_RB], ignore_index=True)
-    print('Done')
     
-    # Save all as pickle
-    save_path = os.path.join(args.dpath, 'Unified_ratings.pkl')
+    # Save unified & herding corrected ratings as pickle file
+    print('Saving corrected ratings as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_ratings.pkl')
     with open(save_path, 'wb') as f:
         pkl.dump(unified_ratings, f)
-    print('Final shape', unified_ratings.shape)
-    print('Final dataframe saved to', save_path)
+    print('Final herding-corrected unified ratings shape: ', unified_ratings.shape)
 
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dpath', type=str, default= 'Data')
-    parser.add_argument('--no-extract', action='store_true')
-    parser.add_argument('-rt', '--min-user-rating', type=int, default=20)
-    parser.add_argument('-rw', '--min-beer-review', type=int, default=15)
-    parser.add_argument('-bp', '--min-brewery-produced', type=int, default=1)
     args = parser.parse_args()
     main(args)
