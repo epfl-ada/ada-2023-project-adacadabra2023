@@ -11,19 +11,11 @@ def correct_time(df, season=False):
     df['date'] = pd.to_datetime(df.date, unit='s')
     df['year'] = df['date'].dt.year
     if season: 
-        df['Season']=""
-        df.loc[(df['date'].dt.month>3)&(df['date'].dt.month<6),  'Season']='Spring'
-        df.loc[(df['date'].dt.month>6)&(df['date'].dt.month<9),  'Season']='Summer'
-        df.loc[(df['date'].dt.month>9)&(df['date'].dt.month<12), 'Season']='Autumn'
-        #Months in between two seasons
-        df.loc[(df['date'].dt.month==3)&(df['date'].dt.day<21), 'Season']='Winter'
-        df.loc[(df['date'].dt.month==3)&(df['date'].dt.day>21), 'Season']='Spring'
-        df.loc[(df['date'].dt.month==6)&(df['date'].dt.day<21), 'Season']='Spring'
-        df.loc[(df['date'].dt.month==6)&(df['date'].dt.day>21), 'Season']='Summer'
-        df.loc[(df['date'].dt.month==9)&(df['date'].dt.day<21), 'Season']='Summer'
-        df.loc[(df['date'].dt.month==9)&(df['date'].dt.day>21), 'Season']='Autumn'
-        df.loc[(df['date'].dt.month==12)&(df['date'].dt.day<21), 'Season']='Autumn'
-        df.loc[df['Season']=="", 'Season']='Winter'
+        df['Trimester']=""
+        df.loc[(df['date'].dt.month>=1)&(df['date'].dt.month<=3),  'Trimester']='T1'
+        df.loc[(df['date'].dt.month>=4)&(df['date'].dt.month<=6),  'Trimester']='T2'
+        df.loc[(df['date'].dt.month>=7)&(df['date'].dt.month<=9), 'Trimester']='T3'
+        df.loc[(df['date'].dt.month>=10)&(df['date'].dt.month<=12), 'Trimester']='T4'
     return df
     
 def linear_trend(group):
