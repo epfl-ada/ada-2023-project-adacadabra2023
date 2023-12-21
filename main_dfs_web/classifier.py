@@ -82,8 +82,8 @@ def main(args):
             pkl.dump(training_df, f)
         print('Dataframe saved to', args.tpath)
     else:
-        training_df = load_data(args.dpath)
-        print('Dataframe loaded from', args.dpath)
+        training_df = load_data(args.tpath)
+        print('Dataframe loaded from', args.tpath)
     print('Training data shape: ', training_df.shape)
     
     if args.no_train:

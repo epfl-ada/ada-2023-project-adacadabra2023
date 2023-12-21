@@ -103,3 +103,12 @@ def filter_countries(df, min_styles=3):
     valid_countries = keep_countries.country_brewery.values
     filtered_countries = df[filtered_df['country_brewery'].isin(valid_countries)]
     return filtered_countries
+
+
+def remove_countries(df):
+    ''' Removes countries with wrongly parsed names
+    '''
+    countries = df.country_brewery.unique()
+    invalid_countries = countries.apply(lambda x: x.contains('</a>'))
+    df = df[~df.country_brewery.isin(invalid_countries)]
+    return df
