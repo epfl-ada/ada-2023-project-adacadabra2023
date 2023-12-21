@@ -11,14 +11,14 @@ df = load_data('Data/web/Train.pkl')
 beerstyles = df['1st_Style'].unique()
 country = None
 
-trimesters = ['Jan-Apr', 'Apr-Jul','Jul-Oct', 'Oct-Dec']
+trimesters = ['Jan-Mar', 'Apr-Jun','Jul-Sept', 'Oct-Dec']
 
 
 # load models
-model_aut = load_data('web_everything/trees/tree_Autumn.pkl')
-model_spr = load_data('web_everything/trees/tree_Spring.pkl')
-model_summ = load_data('web_everything/trees/tree_Summer.pkl')
-model_wint = load_data('web_everything/trees/tree_Winter.pkl')
+model_aut = load_data('web_everything/trees/tree_T1.pkl')
+model_spr = load_data('web_everything/trees/tree_T2.pkl')
+model_summ = load_data('web_everything/trees/tree_T3.pkl')
+model_wint = load_data('web_everything/trees/tree_T4.pkl')
 
 
 # Set Image
