@@ -243,12 +243,11 @@ def main(args):
 
     print('Concatenating data...')
     unified_ratings = pd.concat([unified_ratings_BA, unified_ratings_RB], ignore_index=True)
-    
+    unified_ratings['style'] = unified_ratings['style'].str.strip()
+
     # Remove countries with weird names in country_brewery
     # unified_ratings = pproc.remove_countries(unified_ratings)
-    # countries = unified_ratings.country_brewery.unique().
-    # invalid_countries = countries.apply(lambda x: x.contains('</a>'))
-    # unified_ratings = unified_ratings[~unified_ratings.country_brewery.isin(invalid_countries)]
+
     
     # Filter countries
     unified_ratings = pproc.filter_countries(unified_ratings, args.min_styles_season)
