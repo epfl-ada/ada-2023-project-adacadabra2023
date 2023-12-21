@@ -47,7 +47,11 @@ def weighted_average(group):
     weights = {1: 1.5, 0: 1}
 
     # Calculate the weighted average
-    weighted_avg = (group['detrend'] * group['expertise'].map(weights)).sum() / group['expertise'].map(weights).sum()
+    denom = group['expertise'].map(weights).sum()
+    if denom!=0:
+        weighted_avg = (group['detrend'] * group['expertise'].map(weights)).sum() / group['expertise'].map(weights).sum()
+    else:
+        weighted_avg = 0
 
     return pd.Series({'macro_style': group['macro_style'].iloc[0], 'country_brewery': group['country_brewery'].iloc[0], 'final_score': weighted_avg})
 
@@ -104,7 +108,7 @@ def main(args):
     if args.create_df:
         print('Generating train dataset...')
         main_df_ratings = load_data(args.dpath)
-        main_df_users = load_data(args.dpath)
+        main_df_users = load_data(args.users)
         training_df = create_train_df(main_df_users, main_df_ratings)
         with open(args.tpath, 'wb') as f:
             pkl.dump(training_df, f)
@@ -124,7 +128,7 @@ def main(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dpath', type=str, default='Data/Unified_ratings.pkl', help='Path to original data, used if --create-df specified')
-    parser.add_argument('-u', '--users', type=str, default='Data/Users.pkl',help='Path to users dataframe')
+    parser.add_argument('-u', '--users', type=str, default='Data/unified_users.pkl',help='Path to users dataframe')
     parser.add_argument('-t', '--tpath', type=str, default='Data/web/Train.pkl', help='Path to train data (to save/load)')
     parser.add_argument('-m', '--mpath', type=str, default='web_everything/trees', help='Path to model (save/load)')
     parser.add_argument('--create-df', action='store_true')

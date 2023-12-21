@@ -5,7 +5,7 @@ import streamlit as st
 st.set_page_config(page_title='Beers Travel Guide', page_icon=':beer_mug:')
 
 # Set Image
-st.image('web_everything/beer_intro.png')
+st.image('web_everything/figures/beer_intro.png')
 
 # Set Title
 st.title('Beers Travel Guide')

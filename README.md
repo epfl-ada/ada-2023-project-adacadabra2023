@@ -79,3 +79,14 @@ Sandra: herding effect detrending, time and geographical analysis
 Antonello: text analysis and breweries analysis
  
 We equally contribute to data story creation, webpage implementation and initial preprocessing of the data. 
+
+## Country recommender
+
+Choosing a holiday destination is not easy and everyone does it based on their own criteria. For those who like to decide based on where they can find their favourite beers, we have developed a tool that recommends a country to visit based on your taste (and when you would like to do the trip).
+
+To build it, we have analysed which are the three most popular beers for each country for each season. As proxy for popularity, we have used the weighted average rating of each beer produced in that country. The weighting has been done based on the 'expertise' of the user voting, which is dependent on the number of ratings.
+
+The recommender system is based on a Decision Tree constructed from this data: for each season, we have trained a decision tree to predict the country based on the 3 most popular beers as categorial variables. Since we only have one entry in our training datasets per each country, this is a trivial task in terms of machine learning and we obtain accuracies of around 85%. Missclassifcations only happening when 2 or more countries happen to have the same 3 'top beers'.s
+
+Finally, to give a suggestion to the user we ask for their 3 favorite beer styles and when they want to travel and we input that to the corresponding decision tree.
+![Country recommender site](figures/country_recommender.jpg)
