@@ -8,11 +8,13 @@ import gzip
 
 
 
-
-
 def extract_tar_files(data_path):
     '''
         List the .tar files in the data path and extract them in the corresponding subfolder
+        Args:
+            data_path: path where the tar files are located
+        Returns:
+            Creates subfolders and extracts the tar files in the specific subfolders
     '''
     tar_files = [file for file in os.listdir(data_path) if file.endswith('.gz')]
 
@@ -26,44 +28,16 @@ def extract_tar_files(data_path):
         with tarfile.open(tar_file_path, 'r') as tar:
             tar.extractall(path=folder_path)
 
-
-def filter_by_ratings(df, df_ratings, min_ratings, colname, idcolname1, idcolname2=None):
-    ''' 
-    Filters users based on number of ratings.
-    Args:
-        df (pd.DataFrame): dataframe with users.
-        df_ratings: TODo
-        min_ratings (int): minimum number of ratings a user should have to not be removed
-        colname: name of the column that will set the threshold for filtring out
-        idcolname1: name of the column (in df) that will do the comparison between dfs looking for an isin function
-        idcolname2: name of the column (in df_ratings) that will do the comparison between dfs looking for an isin function
-    Returns:
-        pd.DataFrame: dataframe with users filtered
-    '''
-    if idcolname2 is None:
-        idcolname2 = idcolname1
-    # filter the df accoring to the threshold
-    filtered_df = df[df[colname]>min_ratings]
-    # take the common column to both dfs and apply an isin
-    filtered_df2 = df_ratings[df_ratings[idcolname2].isin(filtered_df[idcolname1].values)]
-    return filtered_df, filtered_df2
-
-def unify_location(loc, keep_state=False):
-    if not keep_state:
-        return 'United States' if loc.startswith('United States') else loc
-    else: 
-        if loc.startswith('United States'):
-            return loc.split(',')[1]
-        else: 
-            return loc
-        
 def txt_to_tsv(path, filename):
     '''
-        This function takes as input the path where the .txt file is located as well as the filename and will create a .tsv file 
-        in the same folder from the data in the .txt file. 
-        
-        The .txt file is read line by line and a dictionary is created to which the different values for each key are appended as 
-        the file is read. The "nan" are replaced by empty space ('') to be better recognized when creating a dataframe.
+        Transform a .txt file enconted as utf8 into a .tsv file in dataframe format. The file is read line by line,
+        and a dictionary is created for the different keys and values every time there is a end-of-line and saved 
+        into the .tsv file. The "nan" are replaced by empty space ('') to be better recognized when creating the dataframe.
+        Args:
+            path: path where the file to be transformed is located
+            filename: name of the file
+        Returns:
+            Creates a .tsv located in the same path provided in args.
     '''
     main_path = os.path.join(path, filename)
     if not os.path.exists(main_path + '.tsv'):
@@ -86,6 +60,60 @@ def txt_to_tsv(path, filename):
                 
                 if obj: file_tsv.write("\t".join(obj.values()) + "\n")
 
+def filter_by_ratings(df, df_ratings, min_ratings, colname, idcolname1, idcolname2=None):
+    ''' 
+    Filters users based on number of ratings.
+    Args:
+        df (pd.DataFrame): dataframe with users.
+        df_ratings: TODo
+        min_ratings (int): minimum number of ratings a user should have to not be removed
+        colname: name of the column that will set the threshold for filtring out
+        idcolname1: name of the column (in df) that will do the comparison between dfs looking for an isin function
+        idcolname2: name of the column (in df_ratings) that will do the comparison between dfs looking for an isin function
+    Returns:
+        pd.DataFrame: dataframe with users filtered
+    '''
+    if idcolname2 is None:
+        idcolname2 = idcolname1
+    # filter the df accoring to the threshold
+    filtered_df = df[df[colname]>min_ratings]
+    # take the common column to both dfs and apply an isin
+    filtered_df2 = df_ratings[df_ratings[idcolname2].isin(filtered_df[idcolname1].values)]
+    return filtered_df, filtered_df2
+
+def filter_by_value(df1, df2, min_value, colname, idcolname):
+    ''' 
+        Filter a dataframe with a threhold and based on filtering results, use an column of that
+        dataframe to filter a second dataframe
+        Args:
+            df1 (pd.DataFrame): dataframe 1.
+            df2 (pd.DataFrame): dataframe 2.
+            min_value (int): threshold for filtering
+            colname: name of the column in df1 that will be filtered by the threshold
+            idcolname1: name of the column that will do the comparison between dfs for filtering df2
+        Returns:
+            pd.DataFrames: filtered dataframes 1 and 2
+    '''
+    filtered_df = df1[df1[colname]>=min_value]
+    filtered_df2 = df2[df2.set_index([idcolname]).index.isin(filtered_df.set_index([idcolname]).index)]
+    return filtered_df, filtered_df2
+
+def unify_location(loc):
+    '''
+        Unify country names for countries that are split in multiple states/regions
+        Args:
+            loc: country name in location column in any of the dataframes
+        Returns:
+            loc: original country name or corrected country names based on conditions
+    '''
+    if (loc.startswith('United States') or loc.startswith('Utah') or loc.startswith('New York') or loc.startswith('Virgin Islands') or loc.startswith('Illinois')):
+        return 'United States'
+    elif loc.startswith('Canada'):
+        return 'Canada'
+    elif loc.startswith('United Kingdom') or loc.startswith('Wales') or loc.startswith('England') or loc.startswith('Scotland') or loc.startswith('Northern Ireland'):
+        return 'United Kingdom'
+    else: 
+        return loc
 
 
 def filter_countries(df, min_styles=3):
