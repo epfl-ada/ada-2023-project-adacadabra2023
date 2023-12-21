@@ -51,7 +51,7 @@ def main(args):
         pproc.txt_to_tsv(BA_path, 'ratings')
     
     # Loading data
-    print('Loading datasets...')
+    print('Loading datasets and filtering ...')
     MB_beers = pd.read_csv(MB_path + '/beers.csv', header=1)
     MB_breweries = pd.read_csv(MB_path + '/breweries.csv', header=1)
     MB_users = pd.read_csv(MB_path + '/users.csv', header=1)
@@ -60,28 +60,20 @@ def main(args):
     RB_breweries = pd.read_csv(RB_path + '/breweries.csv')
     RB_users = pd.read_csv(RB_path + '/users.csv')
     RB_ratings = pd.read_csv(RB_path + '/ratings.tsv', sep='\t')
-    
+    RB_users, RB_ratings = filter_by_ratings(RB_users, RB_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
+    RB_beers, RB_ratings = filter_by_ratings(RB_beers,RB_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
+    RB_breweries, RB_ratings = filter_by_ratings(RB_breweries,RB_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
+
     BA_beers = pd.read_csv(BA_path + '/beers.csv')
     BA_breweries = pd.read_csv(BA_path + '/breweries.csv')
     BA_users = pd.read_csv(BA_path + '/users.csv')
     BA_ratings = pd.read_csv(BA_path + '/ratings.tsv', sep='\t')
-
-    # Remove space in front of user for BA web
-    BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
-    
-    
-    print('Filtering dataframes by num_ratings/beers...')
-    # Filter dataframes individually
-    # MB_users = filter_by_ratings(MB_users, args.min_user_rating, 'nbr_ratings')
-    RB_users, RB_ratings = filter_by_ratings(RB_users, RB_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
     BA_users, BA_ratings = filter_by_ratings(BA_users, BA_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
-    # MB_beers = filter_by_ratings(MB_beers, args.min_beer_review,'nbr_ratings')
-    RB_beers, RB_ratings = filter_by_ratings(RB_beers,RB_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
     BA_beers, BA_ratings = filter_by_ratings(BA_beers,BA_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
-    # MB_breweries = filter_by_ratings(MB_breweries, args.min_brewery_produced, 'nbr_beers')
-    RB_breweries, RB_ratings = filter_by_ratings(RB_breweries,RB_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
     BA_breweries, BA_ratings = filter_by_ratings(BA_breweries,BA_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
-    print('Done')
+    BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
+    print('Done loading!')
+
 
     # # Remove extracted folders
     # print('Removing extracted folders...')
