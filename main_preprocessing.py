@@ -68,10 +68,11 @@ def main(args):
     BA_breweries = pd.read_csv(BA_path + '/breweries.csv')
     BA_users = pd.read_csv(BA_path + '/users.csv')
     BA_ratings = pd.read_csv(BA_path + '/ratings.tsv', sep='\t')
+    BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
     BA_users, BA_ratings = filter_by_ratings(BA_users, BA_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
     BA_beers, BA_ratings = filter_by_ratings(BA_beers,BA_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
     BA_breweries, BA_ratings = filter_by_ratings(BA_breweries,BA_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
-    BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
+   
     print('Done loading!')
 
 
@@ -146,6 +147,13 @@ def main(args):
     unified_beers['nbr_ratings_rb'].fillna(0, inplace=True)
     unified_beers['nbr_ratings_ba'].fillna(0, inplace=True)
     unified_beers['total_nbr_ratings'] = unified_beers['nbr_ratings_rb'] + unified_beers['nbr_ratings_ba']
+    
+    # Save unified users as pickle file
+    print('Saving merging beers as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_beers.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_beers, f)
+    print('Final unified beers shape: ', unified_beers.shape)
     
     # Merge users
     # Creation of the df with ALL the users with a unique user ID (randomly chosen to be the one from RB)
