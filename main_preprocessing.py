@@ -4,11 +4,30 @@ import pandas as pd
 import numpy as np
 import pickle as pkl
 
-import tarfile
 
 import src.data.Preprocessing as pproc 
 import src.data.HerdingFunctions as hf
 
+
+def filter_by_ratings(df, df_ratings, min_ratings, colname, idcolname1, idcolname2=None):
+    ''' Filters users based on number of ratings.
+    Args:
+        df (pd.DataFrame): dataframe with users.
+        df_ratings: TODo
+        min_ratings (int): minimum number of ratings a user should have to not be removed
+        colname: name of the column that will set the threshold for filtring out
+        idcolname1: name of the column (in df) that will do the comparison between dfs looking for an isin function
+        idcolname2: name of the column (in df_ratings) that will do the comparison between dfs looking for an isin function
+    Returns:
+        pd.DataFrame: dataframe with users filtered
+    '''
+    if idcolname2 is None:
+        idcolname2 = idcolname1
+    # filter the df accoring to the threshold
+    filtered_df = df[df[colname]>min_ratings]
+    # take the common column to both dfs and apply an isin
+    filtered_df2 = df_ratings[df_ratings[idcolname2].isin(filtered_df[idcolname1].values)]
+    return filtered_df, filtered_df2
 
 def main(args):
     ''' 
@@ -20,14 +39,16 @@ def main(args):
     BA_path = os.path.join(args.dpath, 'BeerAdvocate')
     MB_path = os.path.join(args.dpath, 'matched_beer_data')
 
-    # Extract the .tar files
-    print('Extracting files...')
-    pproc.extract_tar_files(args.dpath)
-        
-    #Transform .txt files to tsv
-    print('Transforming ratings.txt to tsv...')
-    pproc.txt_to_tsv(RB_path, 'ratings')
-    pproc.txt_to_tsv(BA_path, 'ratings')
+
+    if not args.no_extract:
+        # Extract the .tar files
+        print('Extracting files...')
+        pproc.extract_tar_files(args.dpath)
+            
+        #Transform .txt files to tsv
+        print('Transforming ratings.txt to tsv...')
+        pproc.txt_to_tsv(RB_path, 'ratings')
+        pproc.txt_to_tsv(BA_path, 'ratings')
     
     # Loading data
     print('Loading datasets...')
@@ -47,12 +68,26 @@ def main(args):
 
     # Remove space in front of user for BA web
     BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
+    
+    
+    print('Filtering dataframes by num_ratings/beers...')
+    # Filter dataframes individually
+    # MB_users = filter_by_ratings(MB_users, args.min_user_rating, 'nbr_ratings')
+    RB_users, RB_ratings = filter_by_ratings(RB_users, RB_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
+    BA_users, BA_ratings = filter_by_ratings(BA_users, BA_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
+    # MB_beers = filter_by_ratings(MB_beers, args.min_beer_review,'nbr_ratings')
+    RB_beers, RB_ratings = filter_by_ratings(RB_beers,RB_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
+    BA_beers, BA_ratings = filter_by_ratings(BA_beers,BA_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
+    # MB_breweries = filter_by_ratings(MB_breweries, args.min_brewery_produced, 'nbr_beers')
+    RB_breweries, RB_ratings = filter_by_ratings(RB_breweries,RB_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
+    BA_breweries, BA_ratings = filter_by_ratings(BA_breweries,BA_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
+    print('Done')
 
-    # Remove extracted folders
-    print('Removing extracted folders...')
-    shutil.rmtree(RB_path)
-    shutil.rmtree(BA_path)
-    shutil.rmtree(MB_path)
+    # # Remove extracted folders
+    # print('Removing extracted folders...')
+    # shutil.rmtree(RB_path)
+    # shutil.rmtree(BA_path)
+    # shutil.rmtree(MB_path)
    
     # Merge breweries
     # Creation of the df with ALL the breweries with a unique brewery ID (chosen to be the one from RB)
@@ -209,6 +244,9 @@ def main(args):
     print('Concatenating data...')
     unified_ratings = pd.concat([unified_ratings_BA, unified_ratings_RB], ignore_index=True)
     
+    # Filter countries
+    unified_ratings = pproc.filter_countries(unified_ratings, args.min_styles_season)
+    
     # Save unified & herding corrected ratings as pickle file
     print('Saving corrected ratings as pickle file...')
     save_path = os.path.join(args.dpath, 'unified_ratings.pkl')
@@ -220,5 +258,11 @@ def main(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dpath', type=str, default= 'Data')
+    parser.add_argument('--no-extract', action='store_true')
+    parser.add_argument('-rt', '--min-user-rating', type=int, default=20)
+    parser.add_argument('-rw', '--min-beer-review', type=int, default=15)
+    parser.add_argument('-bp', '--min-brewery-produced', type=int, default=1)
+    parser.add_argument('-fc', '--min-styles-season', type=int, default=3)
+
     args = parser.parse_args()
     main(args)
