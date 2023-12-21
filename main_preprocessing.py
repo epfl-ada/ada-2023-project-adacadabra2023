@@ -45,7 +45,7 @@ def main(args):
     BA_users = pd.read_csv(BA_path + '/users.csv')
     BA_ratings = pd.read_csv(BA_path + '/ratings.tsv', sep='\t')
 
-    # Remove space in front of user
+    # Remove space in front of user for BA web
     BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
 
     # Remove extracted folders
