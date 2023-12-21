@@ -9,24 +9,21 @@ import src.data.Preprocessing as pproc
 import src.data.HerdingFunctions as hf
 
 
-def filter_by_ratings(df, df_ratings, min_ratings, colname, idcolname1, idcolname2=None):
-    ''' Filters users based on number of ratings.
-    Args:
-        df (pd.DataFrame): dataframe with users.
-        df_ratings: TODo
-        min_ratings (int): minimum number of ratings a user should have to not be removed
-        colname: name of the column that will set the threshold for filtring out
-        idcolname1: name of the column (in df) that will do the comparison between dfs looking for an isin function
-        idcolname2: name of the column (in df_ratings) that will do the comparison between dfs looking for an isin function
-    Returns:
-        pd.DataFrame: dataframe with users filtered
+def filter_by_value(df1, df2, min_value, colname, idcolname):
+    ''' 
+        Filter a dataframe with a threhold and based on filtering results, use an column of that
+        dataframe to filter a second dataframe
+        Args:
+            df1 (pd.DataFrame): dataframe 1.
+            df2 (pd.DataFrame): dataframe 2.
+            min_value (int): threshold for filtering
+            colname: name of the column in df1 that will be filtered by the threshold
+            idcolname1: name of the column that will do the comparison between dfs for filtering df2
+        Returns:
+            pd.DataFrames: filtered dataframes 1 and 2
     '''
-    if idcolname2 is None:
-        idcolname2 = idcolname1
-    # filter the df accoring to the threshold
-    filtered_df = df[df[colname]>min_ratings]
-    # take the common column to both dfs and apply an isin
-    filtered_df2 = df_ratings[df_ratings[idcolname2].isin(filtered_df[idcolname1].values)]
+    filtered_df = df1[df1[colname]>=min_value]
+    filtered_df2 = df2[df2.set_index([idcolname]).index.isin(filtered_df.set_index([idcolname]).index)]
     return filtered_df, filtered_df2
 
 def main(args):
@@ -60,21 +57,208 @@ def main(args):
     RB_breweries = pd.read_csv(RB_path + '/breweries.csv')
     RB_users = pd.read_csv(RB_path + '/users.csv')
     RB_ratings = pd.read_csv(RB_path + '/ratings.tsv', sep='\t')
-    RB_users, RB_ratings = filter_by_ratings(RB_users, RB_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
-    RB_beers, RB_ratings = filter_by_ratings(RB_beers,RB_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
-    RB_breweries, RB_ratings = filter_by_ratings(RB_breweries,RB_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
 
     BA_beers = pd.read_csv(BA_path + '/beers.csv')
     BA_breweries = pd.read_csv(BA_path + '/breweries.csv')
     BA_users = pd.read_csv(BA_path + '/users.csv')
     BA_ratings = pd.read_csv(BA_path + '/ratings.tsv', sep='\t')
     BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
-    BA_users, BA_ratings = filter_by_ratings(BA_users, BA_ratings, args.min_user_rating, 'nbr_ratings', 'user_id')
-    BA_beers, BA_ratings = filter_by_ratings(BA_beers,BA_ratings, args.min_beer_review, 'nbr_ratings','beer_id')
-    BA_breweries, BA_ratings = filter_by_ratings(BA_breweries,BA_ratings, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
+    
+    # Load the dictionary for the macro_styles
+    beer_dict = {
+    'American Pale Ale': 'Pale Ale',
+    'American Blonde Ale': 'Pale Ale',
+    'Golden Ale/Blond Ale': 'Pale Ale',
+    'Bitter': 'Pale Ale',
+    'Pale Ale': 'Pale Ale',
+    'American Pale Ale (APA)': 'Pale Ale',
+    'English Pale Ale': 'Pale Ale',
+    'English Bitter': 'Pale Ale',
+    'Premium Bitter/ESB': 'Pale Ale',
+    'English India Pale Ale (IPA)': 'Pale Ale',
+    'Extra Special / Strong Bitter (ESB)': 'Pale Ale',
+    'Saison / Farmhouse Ale': 'Pale Ale',
+    'English Pale Mild Ale': 'Pale Ale',
+    'Saison': 'Pale Ale',
+    'Belgian Pale Ale': 'Pale Ale',
+    'Belgian Strong Pale Ale': 'Strong Pale Ale',
+    'Tripel': 'Strong Pale Ale',
+    'Abbey Tripel': 'Strong Pale Ale',
+    'American IPA': 'IPA',
+    'Black IPA': 'IPA',
+    'India Pale Ale (IPA)': 'IPA',
+    'American Double / Imperial IPA': 'IPA',
+    'Imperial IPA': 'IPA',
+    'New England IPA (NEIPA)': 'IPA',
+    'Session IPA': 'IPA',
+    'Belgian IPA': 'IPA',
+    'Abbey Dubbel': 'Brown/Dark Ale',
+    'Dubbel': 'Brown/Dark Ale',
+    'Belgian Dark Ale': 'Brown/Dark Ale',
+    'American Brown Ale': 'Brown/Dark Ale',
+    'Brown Ale': 'Brown/Dark Ale',
+    'English Dark Mild Ale': 'Brown/Dark Ale',
+    'American Black Ale': 'Brown/Dark Ale',
+    'English Brown Ale': 'Brown/Dark Ale',
+    'Belgian Strong Dark Ale': 'Strong Brown/Dark Ale',
+    'Abt/Quadrupel': 'Strong Brown/Dark Ale',
+    'Barley Wine': 'Strong Brown/Dark Ale',
+    'English Barleywine': 'Strong Brown/Dark Ale',
+    'American Barleywine': 'Strong Brown/Dark Ale',
+    'Quadrupel (Quad)': 'Strong Brown/Dark Ale',
+    'Amber Ale': 'Amber Ale',
+    'American Amber Ale': 'Amber Ale',
+    'Irish Red Ale': 'Amber Ale',
+    'American Amber / Red Ale': 'Amber Ale',
+    'Red Ale': 'Amber Ale',
+    'Belgian Ale': 'Ale',
+    'Irish Ale': 'Ale',
+    'Old Ale': 'Ale',
+    'Mild Ale': 'Ale',
+    'Traditional Ale': 'Ale',
+    'Scotch Ale / Wee Heavy': 'Ale',
+    'Scotch Ale': 'Ale',
+    'Scottish Ale': 'Ale',
+    'Belgian Strong Ale': 'Strong Ale',
+    'American Strong Ale': 'Strong Ale',
+    'English Strong Ale': 'Strong Ale',
+    'Winter Warmer': 'Strong Ale',
+    'Stout': 'Stout',
+    'American Stout': 'Stout',
+    'Dry Stout': 'Stout',
+    'American Double / Imperial Stout': 'Stout',
+    'English Stout': 'Stout',
+    'Imperial Stout': 'Stout',
+    'Irish Dry Stout': 'Stout',
+    'Foreign / Export Stout': 'Stout',
+    'Oatmeal Stout': 'Stout',
+    'Russian Imperial Stout': 'Stout',
+    'Milk / Sweet Stout': 'Stout',
+    'Foreign Stout': 'Stout',
+    'Sweet Stout': 'Stout',
+    'Porter': 'Porter',
+    'American Porter': 'Porter',
+    'Baltic Porter': 'Porter',
+    'Imperial Porter': 'Porter',
+    'English Porter': 'Porter',
+    'American Dark Wheat Ale': 'Wheat Beer',
+    'Berliner Weissbier': 'Wheat Beer',
+    'Dunkelweizen': 'Wheat Beer',
+    'German Hefeweizen': 'Wheat Beer',
+    'Hefeweizen': 'Wheat Beer',
+    'Wheat Ale': 'Wheat Beer',
+    'Weizen Bock': 'Wheat Beer',
+    'Roggenbier': 'Wheat Beer',
+    'Weizenbock': 'Wheat Beer',
+    'Witbier': 'Wheat Beer',
+    'German Kristallweizen': 'Wheat Beer',
+    'Berliner Weisse': 'Wheat Beer',
+    'Kristalweizen': 'Wheat Beer',
+    'Wheatwine': 'Wheat Beer',
+    'Dunkelweizen': 'Wheat Beer',
+    'American Pale Wheat Ale': 'Wheat Beer',
+    'Flanders Oud Bruin': 'Wild/Sour Beer',
+    'Flanders Red Ale': 'Wild/Sour Beer',
+    'Gose': 'Wild/Sour Beer',
+    'Lambic - Fruit': 'Wild/Sour Beer',
+    'American Wild Ale': 'Wild/Sour Beer',
+    'Lambic - Unblended': 'Wild/Sour Beer',
+    'Lambic Style - Faro': 'Wild/Sour Beer',
+    'Lambic Style - Fruit': 'Wild/Sour Beer',
+    'Lambic Style - Gueuze': 'Wild/Sour Beer',
+    'Lambic Style - Unblended': 'Wild/Sour Beer',
+    'Sour Red/Brown': 'Wild/Sour Beer',
+    'Sour/Wild Ale': 'Wild/Sour Beer',
+    'Faro': 'Wild/Sour Beer',
+    'Gueuze': 'Wild/Sour Beer',
+    'Grodziskie/Gose/Lichtenhainer': 'Wild/Sour Beer',
+    'American Adjunct Lager': 'Pilsner & Pale Lager',
+    'American Pale Lager': 'Pilsner & Pale Lager',
+    'Pilsener': 'Pilsner & Pale Lager',
+    'Dortmunder / Export Lager': 'Pilsner & Pale Lager',
+    'European Pale Lager': 'Pilsner & Pale Lager',
+    'German Pilsener': 'Pilsner & Pale Lager',
+    'Pale Lager': 'Pilsner & Pale Lager',
+    'Munich Helles Lager': 'Pilsner & Pale Lager',
+    'Pilsener (German and Czech)': 'Pilsner & Pale Lager',
+    'Czech Pilsener': 'Pilsner & Pale Lager',
+    'Czech Pilsner (Světlý)': 'Pilsner & Pale Lager',
+    'India Style Lager': 'Pilsner & Pale Lager',
+    'Imperial Pils/Strong Pale Lager': 'Pilsner & Pale Lager',
+    'Kellerbier / Zwickelbier': 'Pilsner & Pale Lager',
+    'Euro Pale Lager': 'Pilsner & Pale Lager',
+    'Zwickel/Keller/Landbier': 'Pilsner & Pale Lager',
+    'Euro Strong Lager': 'Pilsner & Pale Lager',
+    'American Double / Imperial Pilsner': 'Pilsner & Pale Lager',
+    'Light Lager': 'Pilsner & Pale Lager',
+    'Radler/Shandy': 'Pilsner & Pale Lager',
+    'Japanese Rice Lager': 'Pilsner & Pale Lager',
+    'Premium Lager': 'Pilsner & Pale Lager',
+    'Dortmunder/Helles': 'Pilsner & Pale Lager',
+    'Doppelbock': 'Bock',
+    'Eisbock': 'Bock',
+    'Heller Bock': 'Bock',
+    'Maibock / Helles Bock': 'Bock',
+    'Bock': 'Bock',
+    'Amber Lager/Vienna': 'Dark Lager',
+    'Munich Dunkel Lager': 'Dark Lager',
+    'Schwarzbier': 'Dark Lager',
+    'Vienna Lager': 'Dark Lager',
+    'American Amber / Red Lager': 'Dark Lager',
+    'Dunkel/Tmavý': 'Dark Lager',
+    'Dunkler Bock': 'Dark Lager',
+    'Euro Dark Lager': 'Dark Lager',
+    'Schwarzbier': 'Dark Lager',
+    'Polotmavý': 'Dark Lager',
+    'Märzen / Oktoberfest': 'Dark Lager',
+    'Oktoberfest/Märzen': 'Dark Lager',
+    'Rauchbier': 'Smoked',
+    'Smoked': 'Smoked',
+    'Smoked Beer': 'Smoked',
+    'Cream Ale': 'Hybrid Beer',
+    'Kölsch': 'Hybrid Beer',
+    'California Common': 'Hybrid Beer',
+    'California Common / Steam Beer': 'Hybrid Beer',
+    'Braggot': 'Hybrid Beer',
+    'Bière de Garde': 'Hybrid Beer',
+    'Black & Tan': 'Hybrid Beer',
+    'Altbier': 'Hybrid Beer',
+    'Rye Beer': 'Hybrid Beer',
+    'Chile Beer': 'Herbs/Vegetables',
+    'Cider': 'Herbs/Vegetables',
+    'Fruit / Vegetable Beer': 'Herbs/Vegetables',
+    'Fruit Beer': 'Herbs/Vegetables',
+    'Herbed / Spiced Beer': 'Herbs/Vegetables',
+    'Mead': 'Herbs/Vegetables',
+    'Spice/Herb/Vegetable': 'Herbs/Vegetables',
+    'Specialty Grain': 'Herbs/Vegetables',
+    'Sahti': 'Herbs/Vegetables',
+    'Sahti/Gotlandsdricke/Koduõlu': 'Herbs/Vegetables',
+    'Scottish Gruit / Ancient Herbed Ale': 'Herbs/Vegetables',
+    'Pumpkin Ale': 'Herbs/Vegetables',
+    'Perry': 'Herbs/Vegetables',
+    'Happoshu': 'Low Alcohol',
+    'Low Alcohol': 'Low Alcohol',
+    'Low Alcohol Beer': 'Low Alcohol',
+    'Kvass': 'Low Alcohol',
+    'American Malt Liquor': 'Cocktails',
+    'Bière de Champagne / Bière Brut': 'Cocktails',
+    'Malt Liquor': 'Cocktails',
+    'Saké - Daiginjo': 'Cocktails',
+    'Saké - Futsu-shu': 'Cocktails',
+    'Saké - Genshu': 'Cocktails',
+    'Saké - Ginjo': 'Cocktails',
+    'Saké - Honjozo': 'Cocktails',
+    'Saké - Infused': 'Cocktails',
+    'Saké - Junmai': 'Cocktails',
+    'Saké - Koshu': 'Cocktails',
+    'Saké - Namasaké': 'Cocktails',
+    'Saké - Nigori': 'Cocktails',
+    'Saké - Taru': 'Cocktails',
+    'Saké - Tokubetsu': 'Cocktails'
+    }
    
     print('Done loading!')
-
 
     # # Remove extracted folders
     # print('Removing extracted folders...')
@@ -111,14 +295,8 @@ def main(args):
     unified_breweries['nbr_ba'] = unified_breweries.groupby('id')['nbr_beers_ba'].transform('mean')
     unified_breweries = unified_breweries.drop_duplicates('id')
     unified_breweries = unified_breweries.drop('nbr_beers_ba', axis=1)
-    unified_breweries = unified_breweries.rename(columns={'nbr_ba':'nbr_beers_ba'})
+    unified_breweries = unified_breweries.rename(columns={'nbr_ba':'nbr_beers_ba', 'id':'brewery_id', 'location':'country_brewery'})
 
-    # Save unified breweries as pickle file
-    print('Saving merging breweries as pickle file...')
-    save_path = os.path.join(args.dpath, 'unified_breweries.pkl')
-    with open(save_path, 'wb') as f:
-        pkl.dump(unified_breweries, f)
-    print('Final unified breweries shape: ', unified_breweries.shape)
 
     # Merge beers
     # Creation of the df with ALL the beers (that have at least one rating) with a unique beer ID (randomly chosen to be the one from RB)
@@ -137,7 +315,7 @@ def main(args):
     available_numbers = np.setxor1d(np.arange(1,3*len(BA_beers_subset)), unified_beers.beer_id.unique())
     merged_df_beers['new_ba_id'] = available_numbers[:len(BA_beers_subset)]
     merged_df_beers['brewery_name'] = merged_df_beers['brewery_name_rb'].combine_first(merged_df_beers['brewery_name_ba'])
-    equivalences_dict_brew_id = dict(zip(unified_breweries['name'], unified_breweries['id']))
+    equivalences_dict_brew_id = dict(zip(unified_breweries['name'], unified_breweries['brewery_id']))
     merged_df_beers['brewery_id'] = merged_df_beers['brewery_name'].map(equivalences_dict_brew_id)
     merged_df_beers['style'] = merged_df_beers['style_rb'].combine_first(merged_df_beers['style_ba'])
     merged_df_beers['beer_id'] = merged_df_beers['beer_id_rb'].combine_first(merged_df_beers['new_ba_id'])
@@ -147,13 +325,7 @@ def main(args):
     unified_beers['nbr_ratings_rb'].fillna(0, inplace=True)
     unified_beers['nbr_ratings_ba'].fillna(0, inplace=True)
     unified_beers['total_nbr_ratings'] = unified_beers['nbr_ratings_rb'] + unified_beers['nbr_ratings_ba']
-    
-    # Save unified users as pickle file
-    print('Saving merging beers as pickle file...')
-    save_path = os.path.join(args.dpath, 'unified_beers.pkl')
-    with open(save_path, 'wb') as f:
-        pkl.dump(unified_beers, f)
-    print('Final unified beers shape: ', unified_beers.shape)
+    unified_beers['macro_style'] = unified_beers['style'].map(beer_dict)
     
     # Merge users
     # Creation of the df with ALL the users with a unique user ID (randomly chosen to be the one from RB)
@@ -180,14 +352,8 @@ def main(args):
     unified_users['nbr_ratings_rb'].fillna(0, inplace=True)
     unified_users['nbr_ratings_ba'].fillna(0, inplace=True)
     unified_users['total_nbr_ratings'] = unified_users['nbr_ratings_rb'] + unified_users['nbr_ratings_ba']
-
-    # Save unified users as pickle file
-    print('Saving merging users as pickle file...')
-    save_path = os.path.join(args.dpath, 'unified_users.pkl')
-    with open(save_path, 'wb') as f:
-        pkl.dump(unified_users, f)
-    print('Final unified users shape: ', unified_users.shape)
-    
+    unified_users = unified_users.rename(columns={'location':'country_user'})
+   
     # Merge ratings
     # Creation of the df with ALL the ratings with a unique user ID (randomly chosen to be the one from RB)
     print('Merging ratings...')
@@ -225,11 +391,19 @@ def main(args):
 
     unified_ratings = pd.concat([unified_ratings, BA_subset], ignore_index=True)
 
-    equivalences_country = dict(zip(unified_users['user_id'], unified_users['location']))
+    equivalences_country = dict(zip(unified_users['user_id'], unified_users['country_user']))
     unified_ratings['country_user'] = unified_ratings['user_id'].map(equivalences_country)
 
-    equivalences_brew_country = dict(zip(unified_breweries['id'], unified_breweries['location']))
+    equivalences_brew_country = dict(zip(unified_breweries['brewery_id'], unified_breweries['country_brewery']))
     unified_ratings['country_brewery'] = unified_ratings['brewery_id'].map(equivalences_brew_country)
+    unified_ratings['style'] = unified_ratings['style'].str.strip()
+    unified_ratings['macro_style'] = unified_ratings['style'].str.strip().map(beer_dict)
+    
+    #Unify locations
+    unified_ratings['country_brewery'] = unified_ratings['country_brewery'].apply(pproc.unify_location)
+    unified_ratings['country_user'] = unified_ratings['country_user'].apply(pproc.unify_location)
+    unified_breweries['country_brewery'] = unified_breweries['country_brewery'].apply(pproc.unify_location)
+    unified_users['country_user'] = unified_users['country_user'].apply(pproc.unify_location)
     
     # Correct herding effect
     # Adding a time column in an interpretable format and a 'year' column.
@@ -243,21 +417,78 @@ def main(args):
 
     print('Concatenating data...')
     unified_ratings = pd.concat([unified_ratings_BA, unified_ratings_RB], ignore_index=True)
-    unified_ratings['style'] = unified_ratings['style'].str.strip()
 
-    # Remove countries with weird names in country_brewery
-    # unified_ratings = pproc.remove_countries(unified_ratings)
-
+    # Save unified beers as pickle file
+    print('Saving merging beers as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_beers_raw.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_beers, f)
+    print('Raw unified beers shape: ', unified_beers.shape)
     
-    # Filter countries
-    unified_ratings = pproc.filter_countries(unified_ratings, args.min_styles_season)
+    # Save unified users as pickle file
+    print('Saving merging users as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_users_raw.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_users, f)
+    print('Raw unified users shape: ', unified_users.shape)
+    
+    # Save unified breweries as pickle file
+    print('Saving merging breweries as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_breweries_raw.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_breweries, f)
+    print('Raw unified breweries shape: ', unified_breweries.shape)
     
     # Save unified & herding corrected ratings as pickle file
     print('Saving corrected ratings as pickle file...')
-    save_path = os.path.join(args.dpath, 'unified_ratings.pkl')
+    save_path = os.path.join(args.dpath, 'unified_ratings_raw.pkl')
     with open(save_path, 'wb') as f:
         pkl.dump(unified_ratings, f)
-    print('Final herding-corrected unified ratings shape: ', unified_ratings.shape)
+    print('Raw herding-corrected unified ratings shape: ', unified_ratings.shape)
+    
+    ##Filtering
+    print('Filtering data...')
+    # To have users with a minimum number of ratings
+    df_users_filt, df_ratings_filt_users = pproc.filter_by_value(unified_users, unified_ratings, args.min_user_rating, 'total_nbr_ratings', 'user_id')
+    
+    # Remove breweries with 0 beers
+    df_breweries_filt, df_ratings_filt_breweries = filter_by_ratings(unified_breweries, df_ratings_filt_users, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
+
+    
+    # Filter to have only locations with at least 30 breweries
+    brewery_per_location_counts = df_breweries_filt.groupby('country_brewery').size().reset_index().rename(columns={0:'brewery_per_location'})
+    _ , df_ratings_filt_countries = pproc.filter_by_ratings(brewery_per_location_counts, df_ratings_filt_breweries, 30, 'brewery_per_location', 'country_brewery')
+        
+    # Filters countries that do not have at least min_styles styles per trimester.
+    df_ratings_filt_final, df_breweries_filt_final = pproc.filter_countries(df_ratings_filt_countries, df_breweries_filt, args.min_styles_season)
+    
+    # Save unified beers as pickle file
+    print('Saving filtered beers as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_beers.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(unified_beers, f)
+    print('Final filtered unified beers shape: ', unified_beers.shape)
+    
+    # Save unified users as pickle file
+    print('Saving filtered users as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_users.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(df_users_filt, f)
+    print('Final filtered unified users shape: ', df_users_filt.shape)
+    
+    # Save unified breweries as pickle file
+    print('Saving filtered breweries as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_breweries.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(df_breweries_filt_final, f)
+    print('Final filtered unified breweries shape: ', df_breweries_filt_final.shape)
+    
+    # Save unified & herding corrected ratings as pickle file
+    print('Saving filtered ratings as pickle file...')
+    save_path = os.path.join(args.dpath, 'unified_ratings.pkl')
+    with open(save_path, 'wb') as f:
+        pkl.dump(df_ratings_filt_final, f)
+    print('Final filtered ratings shape: ', df_ratings_filt_final.shape)
 
 
 if __name__=='__main__':

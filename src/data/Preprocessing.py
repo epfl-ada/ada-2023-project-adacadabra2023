@@ -116,21 +116,23 @@ def unify_location(loc):
         return loc
 
 
-def filter_countries(df, min_styles=3):
-    ''' Filters countries that do not have at least min_styles styles per season.
+def filter_countries(df, df_brew, min_styles=3):
+    ''' Filters countries that do not have at least min_styles styles per trimester.
     Args:
         df: Unified_ratings dataframe coming from main_preprocessing
+        df: Unified_breweries dataframe coming from main_preprocessing
         min_styles (int) min umber of styles
     '''
-    filtered_df = df[['style','Trimester', 'country_brewery']]
+    filtered_df = df[['macro_style','Trimester', 'country_brewery']]
 
     sty_country = filtered_df.groupby(['country_brewery', 'Trimester'], as_index=False).nunique()
 
     select_countries = sty_country.groupby('country_brewery', as_index=False).min()
-    keep_countries = select_countries[select_countries['style'] >= min_styles]
+    keep_countries = select_countries[select_countries['macro_style'] >= min_styles]
     valid_countries = keep_countries.country_brewery.values
     filtered_countries = df[filtered_df['country_brewery'].isin(valid_countries)]
-    return filtered_countries
+    filtered_breweries = df_brew[df_brew['country_brewery'].isin(valid_countries)]
+    return filtered_countries, filtered_breweries
 
 
 def remove_countries(df):
