@@ -101,5 +101,5 @@ def filter_countries(df, min_styles=3):
     select_countries = sty_country.groupby('country_brewery', as_index=False).min()
     keep_countries = select_countries[select_countries['style'] >= min_styles]
     valid_countries = keep_countries.country_brewery.values
-    filtered_countries = filtered_df[filtered_df['country_brewery'].isin(valid_countries)]
+    filtered_countries = df[filtered_df['country_brewery'].isin(valid_countries)]
     return filtered_countries
