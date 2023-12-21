@@ -21,7 +21,7 @@ def create_train_df(df_users, df_ratings):
     equivalent_expertise = dict(zip(df_users['user_id'], df_users['expertise']))
     df_ratings['expertise']=df_ratings['user_id'].map(equivalent_expertise)
     
-    weighted_scores = df.groupby(['country_brewery', 'Trimester', 'macro_style'], as_index=False).apply(weighted_average)
+    weighted_scores = df_ratings.groupby(['country_brewery', 'Trimester', 'macro_style'], as_index=False).apply(weighted_average)
     weighted_scores = weighted_scores.sort_values(by=['country_brewery', 'Trimester', 'final_score'],  ascending=[True, True, False])
     desired_order = ['country_brewery', 'Trimester', 'macro_style', 'final_score']
     weighted_scores = weighted_scores[desired_order]
@@ -103,8 +103,9 @@ def train_classifiers(train_df, models_path):
 def main(args):
     if args.create_df:
         print('Generating train dataset...')
-        main_df = load_data(args.dpath)
-        training_df = create_train_df(main_df)
+        main_df_ratings = load_data(args.dpath)
+        main_df_users = load_data(args.dpath)
+        training_df = create_train_df(main_df_users, main_df_ratings)
         with open(args.tpath, 'wb') as f:
             pkl.dump(training_df, f)
         print('Dataframe saved to', args.tpath)
@@ -123,6 +124,7 @@ def main(args):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dpath', type=str, default='Data/Unified_ratings.pkl', help='Path to original data, used if --create-df specified')
+    parser.add_argument('-u', '--users', type=str, default='Data/Users.pkl',help='Path to users dataframe')
     parser.add_argument('-t', '--tpath', type=str, default='Data/web/Train.pkl', help='Path to train data (to save/load)')
     parser.add_argument('-m', '--mpath', type=str, default='web_everything/trees', help='Path to model (save/load)')
     parser.add_argument('--create-df', action='store_true')
