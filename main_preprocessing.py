@@ -4,16 +4,20 @@ import pandas as pd
 import numpy as np
 import pickle as pkl
 
-import tarfile
-
 import src.data.Preprocessing as pproc 
 import src.data.HerdingFunctions as hf
 
 
 def main(args):
     ''' 
-    Pre-process the raw data, transform .txt files to .parquet and unified
-    the pre-process files into pickle files
+        Extract data from tar files, transform ratings files to .tsv, read the different dataframes,unify them and
+        filter them based on criteria defined during data exploration.
+        Unified and filtered dataframes are saves as pickle files. 
+        Args:
+            dpath: path where the tar files are located
+        Returns:
+            Creates 3 pickle files with the unfied filtered data that will be used on this project. Intermidiate 
+            files created during the preprocessing are removed. 
     '''
     # Define the path for the files
     RB_path = os.path.join(args.dpath, 'RateBeer')
@@ -25,7 +29,7 @@ def main(args):
     pproc.extract_tar_files(args.dpath)
         
     #Transform .txt files to tsv
-    print('Transforming ratings.txt to tsv...')
+    print('Transforming ratings.txt to .tsv...')
     pproc.txt_to_tsv(RB_path, 'ratings')
     pproc.txt_to_tsv(BA_path, 'ratings')
     
@@ -45,7 +49,7 @@ def main(args):
     BA_users = pd.read_csv(BA_path + '/users.csv')
     BA_ratings = pd.read_csv(BA_path + '/ratings.tsv', sep='\t')
 
-    # Remove space in front of user for BA web
+    # Remove space in front of user
     BA_ratings.user_id = BA_ratings.user_id.apply(lambda x: x.replace(' ', ''))
 
     # Remove extracted folders
@@ -84,13 +88,15 @@ def main(args):
     unified_breweries = unified_breweries.drop_duplicates('id')
     unified_breweries = unified_breweries.drop('nbr_beers_ba', axis=1)
     unified_breweries = unified_breweries.rename(columns={'nbr_ba':'nbr_beers_ba'})
+    breweries = unified_breweries
+    breweries = breweries.rename(columns={'id':'brewery_id', 'location':'country_brewery'}, inplace=True)
 
     # Save unified breweries as pickle file
     print('Saving merging breweries as pickle file...')
     save_path = os.path.join(args.dpath, 'unified_breweries.pkl')
     with open(save_path, 'wb') as f:
-        pkl.dump(unified_breweries, f)
-    print('Final unified breweries shape: ', unified_breweries.shape)
+        pkl.dump(breweries, f)
+    print('Final unified breweries shape: ', breweries.shape)
 
     # Merge beers
     # Creation of the df with ALL the beers (that have at least one rating) with a unique beer ID (randomly chosen to be the one from RB)
@@ -208,6 +214,7 @@ def main(args):
 
     print('Concatenating data...')
     unified_ratings = pd.concat([unified_ratings_BA, unified_ratings_RB], ignore_index=True)
+    unified_ratings['style'] = unified_ratings['style'].str.strip()
     
     # Save unified & herding corrected ratings as pickle file
     print('Saving corrected ratings as pickle file...')
