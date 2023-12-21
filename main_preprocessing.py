@@ -353,14 +353,15 @@ def main(args):
     unified_users['nbr_ratings_ba'].fillna(0, inplace=True)
     unified_users['total_nbr_ratings'] = unified_users['nbr_ratings_rb'] + unified_users['nbr_ratings_ba']
     unified_users = unified_users.rename(columns={'location':'country_user'})
+    unified_users = unified_users[~unified_users['country_user'].isna()] #Remove users without a location
    
     # Merge ratings
     # Creation of the df with ALL the ratings with a unique user ID (randomly chosen to be the one from RB)
     print('Merging ratings...')
-    unified_ratings = RB_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id', 'text']]
+    unified_ratings = RB_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id', 'text', 'abv']]
     unified_ratings.loc[:, 'Procedence']  = 'RB'
 
-    BA_subset = BA_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id', 'text']]
+    BA_subset = BA_ratings[['beer_name', 'beer_id', 'brewery_name', 'brewery_id', 'style', 'date', 'rating', 'user_id', 'text', 'abv']]
     BA_subset = BA_subset.add_suffix('_ba')
 
     equivalences_brew_id = dict(zip(merged_df['id_ba'], merged_df['id']))
@@ -398,6 +399,7 @@ def main(args):
     unified_ratings['country_brewery'] = unified_ratings['brewery_id'].map(equivalences_brew_country)
     unified_ratings['style'] = unified_ratings['style'].str.strip()
     unified_ratings['macro_style'] = unified_ratings['style'].str.strip().map(beer_dict)
+    unified_ratings = unified_ratings[~unified_ratings['country_user'].isna()] #Remove ratings of users without a location
     
     #Unify locations
     unified_ratings['country_brewery'] = unified_ratings['country_brewery'].apply(pproc.unify_location)
@@ -452,7 +454,7 @@ def main(args):
     df_users_filt, df_ratings_filt_users = pproc.filter_by_value(unified_users, unified_ratings, args.min_user_rating, 'total_nbr_ratings', 'user_id')
     
     # Remove breweries with 0 beers
-    df_breweries_filt, df_ratings_filt_breweries = filter_by_ratings(unified_breweries, df_ratings_filt_users, args.min_brewery_produced, 'nbr_beers','id', 'brewery_id')
+    df_breweries_filt, df_ratings_filt_breweries = pproc.filter_by_value(unified_breweries, df_ratings_filt_users, args.min_brewery_produced, 'nbr_beers', 'brewery_id')
 
     
     # Filter to have only locations with at least 30 breweries
