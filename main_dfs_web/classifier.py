@@ -14,15 +14,42 @@ sys.path.append('.')
 from src.data.Data import load_data
 
 
-def create_train_df(df):
-    top_4_beerstyles = df.groupby(['country_brewery', 'Trimester'])['style'].value_counts().groupby(['country_brewery', 'Trimester']).head(3).reset_index(name='ratings')
+def create_train_df(df_users, df_ratings):
+    # Expertise
+    df_users['expertise'] = (df_users['total_nbr_ratings'] >= 3352).astype(int)
 
-    styles_combined = top_4_beerstyles.groupby(['country_brewery', 'Trimester'], as_index= False).agg(lambda x: x.tolist())
-    styles_combined[['1st_Style', '2nd_Style', '3rd_Style']] = pd.DataFrame(styles_combined['style'].tolist(), index=styles_combined.index)
-    styles_combined[['1st_Rating', '2nd_Rating', '3rd_Rating']] = pd.DataFrame(styles_combined['ratings'].tolist(), index=styles_combined.index)
-    styles_combined = styles_combined.drop(['style', 'ratings'], axis=1)
+    equivalent_expertise = dict(zip(df_users['user_id'], df_users['expertise']))
+    df_ratings['expertise']=df_ratings['user_id'].map(equivalent_expertise)
+    
+    weighted_scores = df.groupby(['country_brewery', 'Trimester', 'macro_style'], as_index=False).apply(weighted_average)
+    weighted_scores = weighted_scores.sort_values(by=['country_brewery', 'Trimester', 'final_score'],  ascending=[True, True, False])
+    desired_order = ['country_brewery', 'Trimester', 'macro_style', 'final_score']
+    weighted_scores = weighted_scores[desired_order]
+    
+    top_3_beerstyles = weighted_scores.groupby(['country_brewery', 'Trimester']).head(3)
+    styles_combined = top_3_beerstyles.groupby(['country_brewery', 'Trimester'], as_index= False).agg(lambda x: x.tolist())
+
+    styles_combined[['1st_Style', '2nd_Style', '3rd_Style']] = pd.DataFrame(styles_combined['macro_style'].tolist(), index=styles_combined.index)
+    styles_combined[['1st_Score', '2nd_Score', '3rd_Score']] = pd.DataFrame(styles_combined['final_score'].tolist(), index=styles_combined.index)
+    styles_combined = styles_combined.drop(['macro_style', 'final_score'], axis=1)
+    
+    ## SANDRA'S
+    #top_4_beerstyles = df.groupby(['country_brewery', 'Trimester'])['style'].value_counts().groupby(['country_brewery', 'Trimester']).head(3).reset_index(name='ratings')
+
+    #styles_combined = top_4_beerstyles.groupby(['country_brewery', 'Trimester'], as_index= False).agg(lambda x: x.tolist())
+    #styles_combined[['1st_Style', '2nd_Style', '3rd_Style']] = pd.DataFrame(styles_combined['style'].tolist(), index=styles_combined.index)
+    #styles_combined[['1st_Rating', '2nd_Rating', '3rd_Rating']] = pd.DataFrame(styles_combined['ratings'].tolist(), index=styles_combined.index)
+    #styles_combined = styles_combined.drop(['style', 'ratings'], axis=1)
     return styles_combined
 
+def weighted_average(group):    
+    # Define weights based on 'expertise'
+    weights = {1: 1.5, 0: 1}
+
+    # Calculate the weighted average
+    weighted_avg = (group['detrend'] * group['expertise'].map(weights)).sum() / group['expertise'].map(weights).sum()
+
+    return pd.Series({'macro_style': group['macro_style'].iloc[0], 'country_brewery': group['country_brewery'].iloc[0], 'final_score': weighted_avg})
 
 def train_single_tree(season_df):
     # Features (X)
