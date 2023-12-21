@@ -454,7 +454,7 @@ def main(args):
     df_users_filt, df_ratings_filt_users = pproc.filter_by_value(unified_users, unified_ratings, args.min_user_rating, 'total_nbr_ratings', 'user_id')
     
     # Remove breweries with 0 beers
-    df_breweries_filt, df_ratings_filt_breweries = pproc.filter_by_value(unified_breweries, df_ratings_filt_users, args.min_brewery_produced, 'nbr_beers', 'brewery_id')
+    df_breweries_filt, df_ratings_filt_breweries = pproc.filter_by_value(unified_breweries, df_ratings_filt_users, args.min_brewery_produced, 'total_nbr_beers', 'brewery_id')
 
     
     # Filter to have only locations with at least 30 breweries
