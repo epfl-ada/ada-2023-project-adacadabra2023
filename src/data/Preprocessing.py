@@ -94,9 +94,9 @@ def filter_countries(df, min_styles=3):
         df: Unified_ratings dataframe coming from main_preprocessing
         min_styles (int) min umber of styles
     '''
-    filtered_df = df[['style','Season', 'country_brewery']]
+    filtered_df = df[['style','Trimester', 'country_brewery']]
 
-    sty_country = filtered_df.groupby(['country_brewery', 'Season'], as_index=False).nunique()
+    sty_country = filtered_df.groupby(['country_brewery', 'Trimester'], as_index=False).nunique()
 
     select_countries = sty_country.groupby('country_brewery', as_index=False).min()
     keep_countries = select_countries[select_countries['style'] >= min_styles]
