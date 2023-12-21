@@ -89,4 +89,4 @@ To build it, we have analysed which are the three most popular beers for each co
 The recommender system is based on a Decision Tree constructed from this data: for each season, we have trained a decision tree to predict the country based on the 3 most popular beers as categorial variables. Since we only have one entry in our training datasets per each country, this is a trivial task in terms of machine learning and we obtain accuracies of around 85%. Missclassifcations only happening when 2 or more countries happen to have the same 3 'top beers'.s
 
 Finally, to give a suggestion to the user we ask for their 3 favorite beer styles and when they want to travel and we input that to the corresponding decision tree.
-![Country recommender site](figures/country_recommender.jpg)
+![Country recommender site](figures/country_recommender.png)
