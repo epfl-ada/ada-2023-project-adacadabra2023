@@ -9,6 +9,9 @@ import string
 import spacy
 from nltk.corpus import stopwords
 import contractions
+import pickle as pkl
+
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def detect_language(text):
         try:
@@ -18,16 +21,18 @@ def detect_language(text):
         
 def adding_language(df, path):
 
-    filename = 'txt_analysis_lang.tsv'
+    filename = 'txt_analysis_lang.pkl'
     main_path = os.path.join(path, filename)
 
     if not os.path.exists(main_path):
         df['language'] = df['text'].apply(detect_language)
-        df.to_csv(main_path, sep="\t", index=False)
+        df.to_pickle(main_path)
         return df
     else:
-        return pd.read_csv(main_path, sep="\t")
-    
+        with open(main_path, 'rb') as f:
+            df = pkl.load(f)
+            return df
+
 EMOTICONS = {
     u":‑\)":"Happy face or smiley",
     u":\)":"Happy face or smiley",
@@ -305,7 +310,7 @@ def lemmatize_text(text):
 
 def cleaning(df, path):
 
-    filename = 'txt_analysis_pproc.tsv'
+    filename = 'txt_analysis_pproc.pkl'
     main_path = os.path.join(path, filename)
 
     if not os.path.exists(main_path):
@@ -341,8 +346,71 @@ def cleaning(df, path):
         df['tokenize_text'] = df["text"].apply(lambda text: text.split())
 
         # Saving to 
-        df.to_csv(main_path, sep="\t", index=False)
+        df.to_pickle(main_path)
 
         return df
     else:
-        return pd.read_csv(main_path, sep="\t")
+        with open(main_path, 'rb') as f:
+            df = pkl.load(f)
+            return df
+        
+def sort_coo(coo_matrix):
+    """Sort a dict with highest score"""
+    tuples = zip(coo_matrix.col, coo_matrix.data)
+    return sorted(tuples, key=lambda x: (x[1], x[0]), reverse=True)
+
+def extract_topn_from_vector(feature_names, sorted_items, topn=10):
+    """get the feature names and tf-idf score of top n items"""
+    
+    #use only topn items from vector
+    sorted_items = sorted_items[:topn]
+
+    score_vals = []
+    feature_vals = []
+    
+    # word index and corresponding tf-idf score
+    for idx, score in sorted_items:
+        
+        #keep track of feature name and its corresponding score
+        score_vals.append(round(score, 3))
+        feature_vals.append(feature_names[idx])
+
+    #create a tuples of feature, score
+    results= {}
+    for idx in range(len(feature_vals)):
+        results[feature_vals[idx]]=score_vals[idx]
+    
+    return results
+
+def get_keywords(tf_idf_vector, feature_names, nbr_keywords=3):
+    """Return top k keywords from a doc using TF-IDF method"""
+    
+    #sort the tf-idf vectors by descending order of scores
+    sorted_items=sort_coo(tf_idf_vector.tocoo())
+
+    #extract only TOP_K_KEYWORDS
+    keywords=extract_topn_from_vector(feature_names,sorted_items,nbr_keywords)
+    
+    return list(keywords.keys())
+
+def adding_keywords(df, path):
+
+    filename = 'txt_analysis_keywords.pkl'
+    main_path = os.path.join(path, filename)
+
+    if not os.path.exists(main_path):
+        # Computing TF-IDF matrix
+        tfidf_vec = TfidfVectorizer()
+        tfidf_mat = tfidf_vec.fit_transform(df['text'])
+
+        feature_names = tfidf_vec.get_feature_names_out()
+        df['keywords'] = df['text'].apply(lambda doc: get_keywords(tfidf_vec.transform([doc]), feature_names))
+
+        # Saving to 
+        df.to_pickle(main_path)
+
+        return df
+    else:
+        with open(main_path, 'rb') as f:
+            df = pkl.load(f)
+            return df
