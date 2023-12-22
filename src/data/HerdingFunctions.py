@@ -4,29 +4,26 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 
 
-def correct_time(df):
+def correct_time(df, season=False):
     '''
         Change the date column to appropriate format and add as a column the year for the time analysis
     '''
     df['date'] = pd.to_datetime(df.date, unit='s')
     df['year'] = df['date'].dt.year
-    return(df)
+    if season: 
+        df['Trimester']=""
+        df.loc[(df['date'].dt.month>=1)&(df['date'].dt.month<=3),  'Trimester']='T1'
+        df.loc[(df['date'].dt.month>=4)&(df['date'].dt.month<=6),  'Trimester']='T2'
+        df.loc[(df['date'].dt.month>=7)&(df['date'].dt.month<=9), 'Trimester']='T3'
+        df.loc[(df['date'].dt.month>=10)&(df['date'].dt.month<=12), 'Trimester']='T4'
+    return df
     
-def zscore_merge(df1, df2):
-    '''
-        Calculation of the z-score for each beer (not for the mean score of the beer that is what we have in BA_beers or RB_beers) and
-        addition of this column to the identified merged ratings
-    '''    
-    df1['z_score'] = df1.groupby('year')['rating'].transform(lambda x: (x-x.mean())/x.std())
-    df2 = df2.merge(df1, how='inner').copy(deep=True)
-    return(df2)
- 
 def linear_trend(group):
     y = group['diff_exp_mean'].to_numpy()
     X = group['ith_rating'].to_numpy()
     X = sm.add_constant(X)
     res_ols = sm.OLS(y, X).fit()
-    if len(group)>1:
+    if len(group)>2:
         return pd.Series({
             'Slope': res_ols.params[1],
             'Intercept': res_ols.params[0]
@@ -72,5 +69,5 @@ def he_correction(df, plotting=False):
     A = pd.DataFrame(new_col)
     values = A[0].to_numpy()
     df['detrend'] = values
-    return(df)
+    return df
  
